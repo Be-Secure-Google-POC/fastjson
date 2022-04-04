@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v2
       
       - name: Create Jar
-        run: mvn package -Dmaven.test.skip --file pom.xml  # Prepare Jar from the source code
+        run: mvn package --file pom.xml  # Prepare Jar from the source code
     
       - name: Zip the content                              # Zip the contents inside target dir
         run: |
