@@ -6,7 +6,7 @@ on:
       - 'v1.2.24-BeSp*' # Push events for changes under v1.2.24-BeSp0.1, v1.2.24-BeSp0.2...
       
 env:
-    tag: v1.2.24-BeSp2-0.1
+    tag: v1.2.24-BeSp2-1.0
     
 jobs:
 # Job for scan the code 
