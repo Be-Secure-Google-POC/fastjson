@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2101 Alibaba Group.
+ * Copyright 1999-2017 Alibaba Group.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,7 +106,14 @@ public enum Feature {
     /**
      * @since 1.2.22, 1.1.54.android
      */
-    SupportNonPublicField
+    SupportNonPublicField,
+
+    /**
+     * @since 1.2.29
+     *
+     * disable autotype key '@type'
+     */
+    IgnoreAutoType
     ;
 
     Feature(){

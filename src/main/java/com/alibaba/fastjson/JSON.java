@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2101 Alibaba Group.
+ * Copyright 1999-2017 Alibaba Group.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,9 +109,20 @@ public abstract class JSON implements JSONStreamAware, JSONAware {
         features |= SerializerFeature.SkipTransientField.getMask();
         features |= SerializerFeature.WriteEnumUsingName.getMask();
         features |= SerializerFeature.SortField.getMask();
+
+        {
+            String featuresProperty = IOUtils.getStringProperty("fastjson.serializerFeatures.MapSortField");
+            int mask = SerializerFeature.MapSortField.getMask();
+            if ("true".equals(featuresProperty)) {
+                features |= mask;
+            } else if ("false".equals(featuresProperty)) {
+                features &= ~mask;
+            }
+        }
+
         DEFAULT_GENERATE_FEATURE = features;
     }
-    
+
     /**
      * config default type key
      * @since 1.2.14
@@ -731,7 +742,7 @@ public abstract class JSON implements JSONStreamAware, JSONAware {
                                             int defaultFeatures, //
                                             SerializerFeature... features) throws IOException {
        return writeJSONString(os,  //
-                              IOUtils.UTF8, // 
+                              IOUtils.UTF8, //
                               object, //
                               SerializeConfig.globalInstance, //
                               null, //
@@ -889,7 +900,7 @@ public abstract class JSON implements JSONStreamAware, JSONAware {
             return array;
         }
 
-        if (ParserConfig.isPrimitive(clazz)) {
+        if (ParserConfig.isPrimitive2(clazz)) {
             return javaObject;
         }
         
@@ -960,5 +971,9 @@ public abstract class JSON implements JSONStreamAware, JSONAware {
         return chars;
     }
 
-    public final static String VERSION = "1.2.24";
+    public static <T> void handleResovleTask(DefaultJSONParser parser, T value) {
+        parser.handleResovleTask(value);
+    }
+
+    public final static String VERSION = "1.2.29";
 }

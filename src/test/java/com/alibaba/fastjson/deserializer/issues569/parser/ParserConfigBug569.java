@@ -12,7 +12,6 @@ import com.alibaba.fastjson.serializer.ObjectArrayCodec;
 import com.alibaba.fastjson.util.FieldInfo;
 import com.alibaba.fastjson.util.JavaBeanInfo;
 import com.alibaba.fastjson.util.ServiceLoader;
-
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -52,7 +51,7 @@ public class ParserConfigBug569 extends ParserConfig {
     }
 
     public ObjectDeserializer getDeserializer(Class<?> clazz, Type type) {
-        com.alibaba.fastjson.util.IdentityHashMap<Type, ObjectDeserializer> derializers = super.getDerializers();
+        com.alibaba.fastjson.util.IdentityHashMap<Type, ObjectDeserializer> derializers = super.getDeserializers();
         ObjectDeserializer derializer = derializers.get(type);
         if (derializer != null) {
             return derializer;

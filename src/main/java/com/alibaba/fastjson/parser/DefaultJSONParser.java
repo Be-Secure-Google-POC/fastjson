@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2101 Alibaba Group.
+ * Copyright 1999-2017 Alibaba Group.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,10 +52,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONException;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.*;
 import com.alibaba.fastjson.parser.deserializer.ExtraProcessable;
 import com.alibaba.fastjson.parser.deserializer.ExtraProcessor;
 import com.alibaba.fastjson.parser.deserializer.ExtraTypeProvider;
@@ -64,10 +61,7 @@ import com.alibaba.fastjson.parser.deserializer.FieldTypeResolver;
 import com.alibaba.fastjson.parser.deserializer.JavaBeanDeserializer;
 import com.alibaba.fastjson.parser.deserializer.ObjectDeserializer;
 import com.alibaba.fastjson.parser.deserializer.ResolveFieldDeserializer;
-import com.alibaba.fastjson.serializer.BeanContext;
-import com.alibaba.fastjson.serializer.IntegerCodec;
-import com.alibaba.fastjson.serializer.LongCodec;
-import com.alibaba.fastjson.serializer.StringCodec;
+import com.alibaba.fastjson.serializer.*;
 import com.alibaba.fastjson.util.TypeUtils;
 
 /**
@@ -102,29 +96,38 @@ public class DefaultJSONParser implements Closeable {
     private List<ExtraTypeProvider>    extraTypeProviders = null;
     private List<ExtraProcessor>       extraProcessors    = null;
     protected FieldTypeResolver        fieldTypeResolver  = null;
-    
+
+    private boolean                    autoTypeEnable;
+    private String[]                   autoTypeAccept     = null;
+
     protected transient BeanContext    lastBeanContext;
 
     static {
-        primitiveClasses.add(boolean.class);
-        primitiveClasses.add(byte.class);
-        primitiveClasses.add(short.class);
-        primitiveClasses.add(int.class);
-        primitiveClasses.add(long.class);
-        primitiveClasses.add(float.class);
-        primitiveClasses.add(double.class);
+        Class<?>[] classes = new Class[] {
+                boolean.class,
+                byte.class,
+                short.class,
+                int.class,
+                long.class,
+                float.class,
+                double.class,
 
-        primitiveClasses.add(Boolean.class);
-        primitiveClasses.add(Byte.class);
-        primitiveClasses.add(Short.class);
-        primitiveClasses.add(Integer.class);
-        primitiveClasses.add(Long.class);
-        primitiveClasses.add(Float.class);
-        primitiveClasses.add(Double.class);
+                Boolean.class,
+                Byte.class,
+                Short.class,
+                Integer.class,
+                Long.class,
+                Float.class,
+                Double.class,
 
-        primitiveClasses.add(BigInteger.class);
-        primitiveClasses.add(BigDecimal.class);
-        primitiveClasses.add(String.class);
+                BigInteger.class,
+                BigDecimal.class,
+                String.class
+        };
+
+        for (Class<?> clazz : classes) {
+            primitiveClasses.add(clazz);
+        }
     }
 
     public String getDateFomartPattern() {
@@ -319,7 +322,7 @@ public class DefaultJSONParser implements Closeable {
 
                 if (key == JSON.DEFAULT_TYPE_KEY && !lexer.isEnabled(Feature.DisableSpecialKeyDetect)) {
                     String typeName = lexer.scanSymbol(symbolTable, '"');
-                    Class<?> clazz = TypeUtils.loadClass(typeName, config.getDefaultClassLoader());
+                    Class<?> clazz = config.checkAutoType(typeName, null);
 
                     if (clazz == null) {
                         object.put(JSON.DEFAULT_TYPE_KEY, typeName);
@@ -354,7 +357,7 @@ public class DefaultJSONParser implements Closeable {
                     
                     this.setResolveStatus(TypeNameRedirect);
 
-                    if (this.context != null && !(fieldName instanceof Integer)) {
+                    if (this.context != null && !(fieldName instanceof Integer) && !(this.context.fieldName instanceof Integer)) {
                         this.popContext();
                     }
                     
@@ -1253,8 +1256,13 @@ public class DefaultJSONParser implements Closeable {
         }
 
         this.context = this.context.parent;
-        contextArray[contextArrayIndex - 1] = null;
+
+        if (contextArrayIndex <= 0) {
+            return;
+        }
+
         contextArrayIndex--;
+        contextArray[contextArrayIndex] = null;
     }
 
     public ParseContext setContext(Object object, Object fieldName) {
@@ -1500,6 +1508,10 @@ public class DefaultJSONParser implements Closeable {
             for (ExtraProcessor process : extraProcessors) {
                 process.processExtra(object, key, value);
             }
+        }
+
+        if (resolveStatus == NeedToResolve) {
+            resolveStatus = NONE;
         }
     }
 }

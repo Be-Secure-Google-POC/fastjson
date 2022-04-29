@@ -32,18 +32,24 @@ public class FastJsonpResponseBodyAdvice implements ResponseBodyAdvice<Object> {
      */
     private static final Pattern CALLBACK_PARAM_PATTERN = Pattern.compile("[0-9A-Za-z_\\.]*");
     private final String[] jsonpQueryParamNames;
+    /**
+     * Default JSONP query param names: callback/jsonp
+     */
+    public static final String[] DEFAULT_JSONP_QUERY_PARAM_NAMES = { "callback", "jsonp" };
+
+    public FastJsonpResponseBodyAdvice() {
+        this.jsonpQueryParamNames = DEFAULT_JSONP_QUERY_PARAM_NAMES;
+    }
 
     public FastJsonpResponseBodyAdvice(String... queryParamNames) {
         Assert.isTrue(!ObjectUtils.isEmpty(queryParamNames), "At least one query param name is required");
         this.jsonpQueryParamNames = queryParamNames;
     }
 
-    @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
         return FastJsonpHttpMessageConverter4.class.isAssignableFrom(converterType);
     }
 
-    @Override
     public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
             Class<? extends HttpMessageConverter<?>> selectedConverterType, ServerHttpRequest request,
             ServerHttpResponse response) {

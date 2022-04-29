@@ -78,7 +78,8 @@ public class JSONPath implements JSONAware {
 
         Object currentObject = rootObject;
         for (int i = 0; i < segments.length; ++i) {
-            currentObject = segments[i].eval(this, rootObject, currentObject);
+            Segement segement = segments[i];
+            currentObject = segement.eval(this, rootObject, currentObject);
         }
         return currentObject;
     }
@@ -237,6 +238,23 @@ public class JSONPath implements JSONAware {
         Segement lastSegement = segments[segments.length - 1];
         if (lastSegement instanceof PropertySegement) {
             PropertySegement propertySegement = (PropertySegement) lastSegement;
+
+            if (parentObject instanceof Collection) {
+                if (segments.length > 1) {
+                    Segement parentSegement = segments[segments.length - 2];
+                    if (parentSegement instanceof RangeSegement || parentSegement instanceof MultiIndexSegement) {
+                        Collection collection = (Collection) parentObject;
+                        boolean removedOnce = false;
+                        for (Object item : collection) {
+                            boolean removed = propertySegement.remove(this, item);
+                            if (removed) {
+                                removedOnce = true;
+                            }
+                        }
+                        return removedOnce;
+                    }
+                }
+            }
             return propertySegement.remove(this, parentObject);
         }
 
@@ -248,6 +266,10 @@ public class JSONPath implements JSONAware {
     }
 
     public boolean set(Object rootObject, Object value) {
+        return set(rootObject, value, true);
+    }
+
+    public boolean set(Object rootObject, Object value, boolean p) {
         if (rootObject == null) {
             return false;
         }
@@ -273,13 +295,29 @@ public class JSONPath implements JSONAware {
 
                 Object newObj = null;
                 if (nextSegement instanceof PropertySegement) {
-                    Class<?> parentClass = parentObject.getClass();
-                    JavaBeanSerializer beanSerializer = getJavaBeanSerializer(parentClass);
-                    if (beanSerializer != null) {
-                        return false;
+                    JavaBeanDeserializer beanDeserializer = null;
+                    Class<?> fieldClass = null;
+                    if (segment instanceof PropertySegement) {
+                        String propertyName = ((PropertySegement) segment).propertyName;
+                        Class<?> parentClass = parentObject.getClass();
+                        JavaBeanDeserializer parentBeanDeserializer = getJavaBeanDeserializer(parentClass);
+                        if (parentBeanDeserializer != null) {
+                            FieldDeserializer fieldDeserializer = parentBeanDeserializer.getFieldDeserializer(propertyName);
+                            fieldClass = fieldDeserializer.fieldInfo.fieldClass;
+                            beanDeserializer = getJavaBeanDeserializer(fieldClass);
+                        }
                     }
 
-                    newObj = new JSONObject();   
+                    if (beanDeserializer != null) {
+
+                        if (beanDeserializer.beanInfo.defaultConstructor != null) {
+                            newObj = beanDeserializer.createInstance(null, fieldClass);
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        newObj = new JSONObject();
+                    }
                 } else if (nextSegement instanceof ArrayAccessSegement) {
                     newObj = new JSONArray();
                 }
@@ -458,7 +496,7 @@ public class JSONPath implements JSONAware {
             return;
         }
 
-        if (ParserConfig.isPrimitive(clazz) || clazz.isEnum()) {
+        if (ParserConfig.isPrimitive2(clazz) || clazz.isEnum()) {
             return;
         }
 
@@ -2118,7 +2156,12 @@ public class JSONPath implements JSONAware {
             for (int i = 0; i < list.size(); ++i) {
                 Object obj = list.get(i);
                 Object itemValue = getPropertyValue(obj, propertyName, strictMode);
-                fieldValues.add(itemValue);
+                if (itemValue instanceof Collection) {
+                    Collection collection = (Collection) itemValue;
+                    fieldValues.addAll(collection);
+                } else {
+                    fieldValues.add(itemValue);
+                }
             }
 
             return fieldValues;
@@ -2298,6 +2341,17 @@ public class JSONPath implements JSONAware {
             }
         }
         return beanSerializer;
+    }
+
+    protected JavaBeanDeserializer getJavaBeanDeserializer(final Class<?> currentClass) {
+        JavaBeanDeserializer beanDeserializer = null;
+        {
+            ObjectDeserializer deserializer = parserConfig.getDeserializer(currentClass);
+            if (deserializer instanceof JavaBeanDeserializer) {
+                beanDeserializer = (JavaBeanDeserializer) deserializer;
+            }
+        }
+        return beanDeserializer;
     }
 
     @SuppressWarnings("rawtypes")

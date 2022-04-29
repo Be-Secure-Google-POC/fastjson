@@ -6,12 +6,13 @@
 	<parent>
 		<groupId>com.alibaba</groupId>
 		<artifactId>parent-pom</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+		<version>1.0.0</version>
 	</parent>
 -->
+
 	<groupId>com.alibaba</groupId>
 	<artifactId>fastjson</artifactId>
-	<version>1.2.24</version>
+	<version>v1.2.24-BeSp1-1.0</version>
 
 	<packaging>jar</packaging>
 	<name>fastjson</name>
@@ -23,9 +24,9 @@
 	<properties>
 		<junit.version>4.11</junit.version>
 		<gpg.skip>true</gpg.skip>
-		<javadoc.skip>true</javadoc.skip>
+		<javadoc.skip>false</javadoc.skip>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<jdk.version>1.5</jdk.version>
+		<jdk.version>1.6</jdk.version>
 	</properties>
 
 	<scm>
@@ -176,7 +177,7 @@
 			<version>2.0.1</version>
 			<scope>provided</scope>
 			<optional>true</optional>
-		</dependency>
+		</dependency>	
 
 		<dependency>
 			<groupId>org.apache.cxf</groupId>
@@ -192,7 +193,7 @@
 			<scope>provided</scope>
 			<optional>true</optional>
 		</dependency>
-		
+	
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-websocket</artifactId>
@@ -386,7 +387,7 @@
 		<dependency>
 			<groupId>com.jsoniter</groupId>
 			<artifactId>jsoniter</artifactId>
-			<version>0.9.4</version>
+			<version>0.9.8</version>
 			<scope>test</scope>
 		</dependency>
 

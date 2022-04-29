@@ -185,7 +185,7 @@ public class JavaBeanDeserializer implements ObjectDeserializer {
     }
 
     public <T> T deserialze(DefaultJSONParser parser, Type type, Object fieldName, int features) {
-        return deserialze(parser, type, fieldName, null, features);
+        return deserialze(parser, type, fieldName, null, features, null);
     }
 
     @SuppressWarnings({ "unchecked" })
@@ -267,7 +267,8 @@ public class JavaBeanDeserializer implements ObjectDeserializer {
                                Type type, // 
                                Object fieldName, // 
                                Object object, //
-                               int features) {
+                               int features, //
+                               int[] setFlags) {
         if (type == JSON.class || type == JSONObject.class) {
             return (T) parser.parse();
         }
@@ -536,7 +537,7 @@ public class JavaBeanDeserializer implements ObjectDeserializer {
                             String typeName = lexer.stringVal();
                             lexer.nextToken(JSONToken.COMMA);
 
-                            if (typeName.equals(beanInfo.typeName)) {
+                            if (typeName.equals(beanInfo.typeName)|| parser.isEnabled(Feature.IgnoreAutoType)) {
                                 if (lexer.token() == JSONToken.RBRACE) {
                                     lexer.nextToken();
                                     break;
@@ -545,21 +546,16 @@ public class JavaBeanDeserializer implements ObjectDeserializer {
                             }
                             
                             ParserConfig config = parser.getConfig();
-                            ObjectDeserializer deserizer = getSeeAlso(config, this.beanInfo, typeName);
+                            ObjectDeserializer deserializer = getSeeAlso(config, this.beanInfo, typeName);
                             Class<?> userType = null;
-                            if (deserizer == null) {
-                                userType = TypeUtils.loadClass(typeName, config.getDefaultClassLoader());
-                                
+
+                            if (deserializer == null) {
                                 Class<?> expectClass = TypeUtils.getClass(type);
-                                if (expectClass == null || 
-                                    (userType != null && expectClass.isAssignableFrom(userType))) {
-                                    deserizer = parser.getConfig().getDeserializer(userType);                                        
-                                } else {
-                                    throw new JSONException("type not match");
-                                }
+                                userType = config.checkAutoType(typeName, expectClass);
+                                deserializer = parser.getConfig().getDeserializer(userType);
                             }
                             
-                            return (T) deserizer.deserialze(parser, userType, fieldName);
+                            return (T) deserializer.deserialze(parser, userType, fieldName);
                         } else {
                             throw new JSONException("syntax error");
                         }
@@ -597,7 +593,7 @@ public class JavaBeanDeserializer implements ObjectDeserializer {
                         }
                     }
                 } else {
-                    boolean match = parseField(parser, key, object, type, fieldValues);
+                    boolean match = parseField(parser, key, object, type, fieldValues, setFlags);
                     if (!match) {
                         if (lexer.token() == JSONToken.RBRACE) {
                             lexer.nextToken();
@@ -716,9 +712,14 @@ public class JavaBeanDeserializer implements ObjectDeserializer {
             return null;
         }
     }
-    
+
     public boolean parseField(DefaultJSONParser parser, String key, Object object, Type objectType,
                               Map<String, Object> fieldValues) {
+        return parseField(parser, key, object, objectType, fieldValues, null);
+    }
+    
+    public boolean parseField(DefaultJSONParser parser, String key, Object object, Type objectType,
+                              Map<String, Object> fieldValues, int[] setFlags) {
         JSONLexer lexer = parser.lexer; // xxx
 
         FieldDeserializer fieldDeserializer = smartMatch(key);
@@ -766,6 +767,23 @@ public class JavaBeanDeserializer implements ObjectDeserializer {
             parser.parseExtra(object, key);
 
             return false;
+        }
+
+        int fieldIndex = -1;
+        for (int i = 0; i < sortedFieldDeserializers.length; ++i) {
+            if (sortedFieldDeserializers[i] == fieldDeserializer) {
+                fieldIndex = i;
+                break;
+            }
+        }
+        if (fieldIndex != -1 && setFlags != null && key.startsWith("_")) {
+            int flagIndex = fieldIndex / 32;
+            if (flagIndex < setFlags.length) {
+                if ((setFlags[flagIndex] & (1 << flagIndex)) != 0) {
+                    parser.parseExtra(object, key);
+                    return false;
+                }
+            }
         }
 
         lexer.nextTokenWithColon(fieldDeserializer.getFastMatchToken());
@@ -917,9 +935,18 @@ public class JavaBeanDeserializer implements ObjectDeserializer {
     public Type getFieldType(int ordinal) {
         return sortedFieldDeserializers[ordinal].fieldInfo.fieldType;
     }
-    
+
     protected Object parseRest(DefaultJSONParser parser, Type type, Object fieldName, Object instance, int features) {
-        Object value = deserialze(parser, type, fieldName, instance, features);
+        return parseRest(parser, type, fieldName, instance, features, new int[0]);
+    }
+
+    protected Object parseRest(DefaultJSONParser parser
+            , Type type
+            , Object fieldName
+            , Object instance
+            , int features
+            , int[] setFlags) {
+        Object value = deserialze(parser, type, fieldName, instance, features, setFlags);
 
         return value;
     }

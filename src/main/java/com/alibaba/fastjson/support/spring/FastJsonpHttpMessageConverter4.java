@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Type;
+import java.nio.charset.Charset;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
@@ -110,7 +111,6 @@ public class FastJsonpHttpMessageConverter4 extends AbstractGenericHttpMessageCo
         return true;
     }
 
-    @Override
     public Object read(Type type, //
             Class<?> contextClass, //
             HttpInputMessage inputMessage //
@@ -147,7 +147,9 @@ public class FastJsonpHttpMessageConverter4 extends AbstractGenericHttpMessageCo
                 JSON.DEFAULT_GENERATE_FEATURE, //
                 fastJsonConfig.getSerializerFeatures());
         len += writeSuffix(outnew, obj);
-        headers.setContentLength(len);
+        if (fastJsonConfig.isWriteContentLength()) {
+            headers.setContentLength(len);
+        }
         OutputStream out = outputMessage.getBody();
         outnew.writeTo(out);
         outnew.close();

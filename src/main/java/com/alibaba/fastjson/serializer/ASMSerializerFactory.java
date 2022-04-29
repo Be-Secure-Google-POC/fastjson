@@ -154,7 +154,7 @@ public class ASMSerializerFactory implements Opcodes {
 
         for (FieldInfo fieldInfo : getters) {
             if (fieldInfo.fieldClass.isPrimitive() //
-                || fieldInfo.fieldClass.isEnum() //
+                //|| fieldInfo.fieldClass.isEnum() //
                 || fieldInfo.fieldClass == String.class) {
                 continue;
             }
@@ -181,7 +181,7 @@ public class ASMSerializerFactory implements Opcodes {
         for (int i = 0; i < getters.length; ++i) {
             FieldInfo fieldInfo = getters[i];
             if (fieldInfo.fieldClass.isPrimitive() //
-                || fieldInfo.fieldClass.isEnum() //
+//                || fieldInfo.fieldClass.isEnum() //
                 || fieldInfo.fieldClass == String.class) {
                 continue;
             }
@@ -246,6 +246,19 @@ public class ASMSerializerFactory implements Opcodes {
                                   null, //
                                   new String[] { "java/io/IOException" } //
             );
+
+            {
+                Label endIf_ = new Label();
+                mw.visitVarInsn(ALOAD, Context.obj);
+                //serializer.writeNull();
+                mw.visitJumpInsn(IFNONNULL, endIf_);
+                mw.visitVarInsn(ALOAD, Context.serializer);
+                mw.visitMethodInsn(INVOKEVIRTUAL, JSONSerializer,
+                        "writeNull", "()V");
+
+                mw.visitInsn(RETURN);
+                mw.visitLabel(endIf_);
+            }
 
             mw.visitVarInsn(ALOAD, Context.serializer);
             mw.visitFieldInsn(GETFIELD, JSONSerializer, "out", SerializeWriter_desc);
@@ -745,6 +758,7 @@ public class ASMSerializerFactory implements Opcodes {
 
     private void generateWriteMethod(Class<?> clazz, MethodVisitor mw, FieldInfo[] getters,
                                      Context context) throws Exception {
+
         // if (serializer.containsReference(object)) {
         Label end = new Label();
 
@@ -1545,7 +1559,7 @@ public class ASMSerializerFactory implements Opcodes {
 
         Label classIfEnd_ = new Label(), classIfElse_ = new Label();
         if (Modifier.isPublic(fieldClass.getModifiers()) //
-            && !ParserConfig.isPrimitive(fieldClass) //
+            && !ParserConfig.isPrimitive2(fieldClass) //
         ) {
             mw.visitVarInsn(ALOAD, context.var("object"));
             mw.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Object", "getClass", "()Ljava/lang/Class;");

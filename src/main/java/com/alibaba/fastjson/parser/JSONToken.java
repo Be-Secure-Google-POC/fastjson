@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2101 Alibaba Group.
+ * Copyright 1999-2017 Alibaba Group.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,9 @@ public class JSONToken {
     
     public final static int UNDEFINED            = 23; // undefined
 
+    public final static int SEMI                 = 24;
+    public final static int DOT                  = 25;
+
     public static String name(int value) {
         switch (value) {
             case ERROR:
@@ -102,6 +105,10 @@ public class JSONToken {
                 return ",";
             case COLON:
                 return ":";
+            case SEMI:
+                return ";";
+            case DOT:
+                return ".";
             case IDENTIFIER:
                 return "ident";
             case FIELD_NAME:
